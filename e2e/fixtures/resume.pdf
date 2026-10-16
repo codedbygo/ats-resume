@@ -1,0 +1,46 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 630 >>
+stream
+BT /F1 11 Tf 14 TL 50 760 Td
+(Jordan Lee) Tj T*
+(jordan.lee@example.com | +1 212 555 0199 | github.com/jordanlee) Tj T*
+(Summary) Tj T*
+(Backend engineer building Python and FastAPI services with LLMs and RAG.) Tj T*
+(Experience) Tj T*
+(Software Engineer, Example Corp \(2022 - Present\)) Tj T*
+(- Built a FastAPI service on PostgreSQL handling 1M requests a day) Tj T*
+(- Reduced p95 latency by 40% with Redis caching) Tj T*
+(- Shipped a RAG assistant using embeddings and pgvector) Tj T*
+(Skills) Tj T*
+(Python, FastAPI, PostgreSQL, Redis, Docker, AWS, LLMs, RAG) Tj T*
+(Education) Tj T*
+(BSc Computer Science \(2022\)) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000922 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+992
+%%EOF
