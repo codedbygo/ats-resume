@@ -1,4 +1,4 @@
-import { Gauge, Radar, ShieldCheck, Sparkles, Wand2, Zap } from "lucide-react";
+import { ArrowRight, Gauge, Radar, ShieldCheck, Sparkles, Wand2, Zap } from "lucide-react";
 
 import { serverEnv } from "@/env.server";
 import { Workspace } from "@/features/workspace/components/Workspace";
@@ -26,6 +26,27 @@ const STEPS = [
     title: "Fix it for the ATS",
     body: "A live ATS score with a concrete fix per check, and AI rewrites that mirror one job's language without inventing facts.",
   },
+] as const;
+
+const PIPELINE = [
+  ["Resume", "PDF parsed server-side with unpdf, or pasted text"],
+  ["Live ATS scorer", "7 deterministic checks, rerun in the browser on every keystroke"],
+  ["Job boards", "3 public APIs fetched in parallel, deduplicated, cached hourly"],
+  ["Ranking", "TF-IDF vectors, cosine similarity and skill coverage"],
+  ["LLM", "OpenRouter free models with fallback: tailoring and cover letters"],
+] as const;
+
+const STACK = [
+  "Next.js 16 App Router",
+  "React 19",
+  "TypeScript strict",
+  "Server Actions",
+  "Cache Components",
+  "Zod at every boundary",
+  "Tailwind CSS v4",
+  "Vitest + Testing Library",
+  "Playwright e2e",
+  "Vercel",
 ] as const;
 
 // The index route. The hero is static; the workspace is client-side because
@@ -114,16 +135,51 @@ export default function HomePage() {
                 Your matching workspace
               </h2>
               <p className="mt-1 text-muted-foreground">
-                Drop in a resume or try the sample. Everything runs in this tab.
+                Drop in a resume or try the sample. Your resume stays in your browser.
               </p>
             </div>
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="size-4 text-success" aria-hidden />
-              Nothing is stored. No account needed.
+              No account. Nothing stored on a server.
             </p>
           </div>
           <Workspace aiEnabled={aiEnabled} />
         </div>
+      </section>
+      <section id="tech" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
+        <p className="text-xs font-semibold tracking-wide text-primary uppercase">Under the hood</p>
+        <h2 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+          How the matching engine works
+        </h2>
+        <p className="mt-2 max-w-2xl text-muted-foreground">
+          Deterministic where it can be, AI where it adds value. Scores are explainable: every match
+          shows its skill coverage and semantic similarity, and the AI never invents facts.
+        </p>
+        <ol className="mt-8 grid gap-3 md:grid-cols-5">
+          {PIPELINE.map(([title, body], i) => (
+            <li key={title} className="relative rounded-2xl border bg-card p-4 shadow-sm">
+              <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
+              <h3 className="mt-1 font-semibold">{title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
+              {i < PIPELINE.length - 1 && (
+                <ArrowRight
+                  className="absolute top-1/2 -right-3 z-10 hidden size-5 -translate-y-1/2 rounded-full bg-background text-primary md:block"
+                  aria-hidden
+                />
+              )}
+            </li>
+          ))}
+        </ol>
+        <ul className="mt-6 flex flex-wrap gap-2" aria-label="Tech stack">
+          {STACK.map((t) => (
+            <li
+              key={t}
+              className="rounded-full border bg-card px-3 py-1 text-xs font-medium shadow-sm"
+            >
+              {t}
+            </li>
+          ))}
+        </ul>
       </section>
     </>
   );

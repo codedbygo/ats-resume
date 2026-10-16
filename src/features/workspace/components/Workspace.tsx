@@ -1,14 +1,27 @@
 "use client";
 
-import { FileText, LoaderCircle, Radar, RotateCcw, Upload, Wand2 } from "lucide-react";
+import {
+  Download,
+  FileText,
+  LoaderCircle,
+  Printer,
+  Radar,
+  RotateCcw,
+  Search,
+  TrendingUp,
+  Upload,
+  Wand2,
+} from "lucide-react";
 import { useActionState, useDeferredValue, useRef, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
-import { tailorResume, type TailorState } from "@/features/ai/actions";
+import { tailorResume, type TailorMode, type TailorState } from "@/features/ai/actions";
 import { scoreResume } from "@/features/ats/score";
 import { findMatches, type MatchState } from "@/features/jobs/actions";
+import { skillGaps } from "@/features/jobs/insights";
 import { parseResume, type ParseState } from "@/features/resume/actions";
 import { SAMPLE_RESUME } from "@/features/resume/sample";
+import { useResume, writeResume } from "@/features/resume/storage";
 import { cn } from "@/lib/utils";
 
 import { AtsPanel } from "./AtsPanel";
@@ -30,13 +43,26 @@ function JobSkeleton() {
   );
 }
 
+function downloadText(text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "resume-ats.txt";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 /** Workspace is the whole flow: resume in, live ATS score, ranked jobs, AI tailoring. */
 export function Workspace({ aiEnabled }: { aiEnabled: boolean }) {
-  const [resume, setResume] = useState("");
+  const resume = useResume();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [tailorFor, setTailorFor] = useState<string | null>(null);
+  const [aiFor, setAiFor] = useState<{ id: string; mode: TailorMode } | null>(null);
+  const [query, setQuery] = useState("");
+  const [minScore, setMinScore] = useState(0);
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  const setResume = writeResume;
 
   const [parsed, uploadAction, uploading] = useActionState(
     async (prev: ParseState, form: FormData) => {
@@ -50,9 +76,9 @@ export function Workspace({ aiEnabled }: { aiEnabled: boolean }) {
     (_prev: MatchState | null, text: string) => findMatches(text),
     null,
   );
-  const [tailorState, tailorAction, tailoring] = useActionState(
-    (_prev: TailorState | null, input: { resume: string; jobId: string }) =>
-      tailorResume(input.resume, input.jobId),
+  const [aiState, aiAction, aiBusy] = useActionState(
+    (_prev: TailorState | null, input: { resume: string; jobId: string; mode: TailorMode }) =>
+      tailorResume(input.resume, input.jobId, input.mode),
     null,
   );
   const [, startTransition] = useTransition();
@@ -62,6 +88,13 @@ export function Workspace({ aiEnabled }: { aiEnabled: boolean }) {
   const deferredResume = useDeferredValue(resume);
   const ats = scoreResume(deferredResume, selected?.description);
   const words = resume.split(/\s+/).filter(Boolean).length;
+  const gaps = skillGaps(matches);
+  const needle = query.trim().toLowerCase();
+  const visible = matches.filter(
+    (m) =>
+      m.score >= minScore &&
+      (!needle || `${m.title} ${m.company} ${m.location}`.toLowerCase().includes(needle)),
+  );
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-12">
@@ -170,10 +203,35 @@ export function Workspace({ aiEnabled }: { aiEnabled: boolean }) {
               dragging && "bg-primary/10",
             )}
           />
-          <p className="flex justify-between border-t px-4 py-2 text-xs text-muted-foreground">
-            <span>{words} words</span>
-            <span>Stays in this tab. Never stored.</span>
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-2 text-xs text-muted-foreground">
+            <span>{words} words · saved in this browser only</span>
+            <span className="flex gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                disabled={!resume.trim()}
+                onClick={() => {
+                  downloadText(resume);
+                }}
+              >
+                <Download aria-hidden /> .txt
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                disabled={!resume.trim()}
+                onClick={() => {
+                  window.print();
+                }}
+              >
+                <Printer aria-hidden /> ATS-safe PDF
+              </Button>
+            </span>
+          </div>
         </section>
 
         <AtsPanel
@@ -244,24 +302,99 @@ export function Workspace({ aiEnabled }: { aiEnabled: boolean }) {
           </div>
         )}
 
+        {!matching && gaps.length > 0 && (
+          <section
+            aria-labelledby="gaps-heading"
+            className="rounded-2xl border bg-linear-to-br from-primary/5 to-brand-2/5 p-4 shadow-sm"
+          >
+            <h3 id="gaps-heading" className="flex items-center gap-2 text-sm font-semibold">
+              <TrendingUp className="size-4 text-primary" aria-hidden /> Skills that unlock more of
+              these jobs
+            </h3>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+              {gaps.map((g) => (
+                <li
+                  key={g.skill}
+                  className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm"
+                >
+                  <span className="font-medium">{g.skill}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {g.jobs} {g.jobs === 1 ? "job" : "jobs"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {!matching && matches.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="relative min-w-0 flex-1">
+              <span className="sr-only">Filter jobs</span>
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                }}
+                placeholder="Filter by title, company or location"
+                className="h-9 w-full rounded-lg border bg-card pr-3 pl-9 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              Min match
+              <select
+                value={minScore}
+                onChange={(e) => {
+                  setMinScore(Number(e.target.value));
+                }}
+                className="h-9 rounded-lg border bg-card px-2 text-sm text-foreground shadow-sm"
+              >
+                {[0, 30, 50, 70].map((v) => (
+                  <option key={v} value={v}>
+                    {v === 0 ? "Any" : `${String(v)}%+`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+
+        {!matching && matches.length > 0 && visible.length === 0 && (
+          <p
+            role="status"
+            className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground"
+          >
+            No jobs match these filters.
+          </p>
+        )}
+
         {!matching && (
           <ol className="space-y-3">
-            {matches.map((m, i) => (
+            {visible.map((m, i) => (
               <JobCard
                 key={m.id}
                 match={m}
                 rank={i + 1}
                 selected={m.id === selectedId}
                 aiEnabled={aiEnabled}
-                tailor={tailorFor === m.id && !tailoring ? tailorState : null}
-                tailoring={tailorFor === m.id && tailoring}
+                ai={
+                  aiFor?.id === m.id && !aiBusy && aiState
+                    ? { mode: aiFor.mode, state: aiState }
+                    : null
+                }
+                busy={aiFor?.id === m.id && aiBusy ? aiFor.mode : null}
                 onSelect={() => {
                   setSelectedId(m.id === selectedId ? null : m.id);
                 }}
-                onTailor={() => {
-                  setTailorFor(m.id);
+                onAi={(mode) => {
+                  setAiFor({ id: m.id, mode });
                   startTransition(() => {
-                    tailorAction({ resume, jobId: m.id });
+                    aiAction({ resume, jobId: m.id, mode });
                   });
                 }}
               />

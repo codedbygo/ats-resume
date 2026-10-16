@@ -46,6 +46,7 @@ describe("rankJobs", () => {
 
     expect(fe?.matched).toEqual(["TypeScript", "React", "Next.js"]);
     expect(fe?.missing).toEqual(["Kafka", "Terraform"]);
+    expect(fe?.coverage).toBe(60);
   });
 
   it("keeps scores within 0 to 100 and honours the limit", () => {

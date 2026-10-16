@@ -7,6 +7,10 @@ export interface JobMatch {
   /** 0 to 100, what the UI shows. */
   score: number;
   similarity: number;
+  /** 0 to 100: share of the job's skills the resume lists. */
+  coverage: number;
+  /** 0 to 100: cosine similarity scaled to the range resumes reach. */
+  semantic: number;
   matched: string[];
   missing: string[];
 }
@@ -72,8 +76,17 @@ export function rankJobs(resume: string, jobs: Job[], limit = 25): JobMatch[] {
       const missing = jobSkills.filter((s) => !resumeSkills.has(s));
       const coverage = jobSkills.length ? matched.length / jobSkills.length : 0;
       // Cosine between a resume and a job post rarely passes 0.4, so scale it.
-      const score = Math.round(100 * (0.55 * coverage + 0.45 * Math.min(1, similarity / 0.35)));
-      return { job, score, similarity, matched, missing };
+      const semantic = Math.min(1, similarity / 0.35);
+      const score = Math.round(100 * (0.55 * coverage + 0.45 * semantic));
+      return {
+        job,
+        score,
+        similarity,
+        coverage: Math.round(100 * coverage),
+        semantic: Math.round(100 * semantic),
+        matched,
+        missing,
+      };
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);

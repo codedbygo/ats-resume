@@ -49,6 +49,24 @@ describe("tailorResume", () => {
     expect(body.messages[1]?.content).toContain("AI Engineer, Matching at Northwind AI");
   });
 
+  it("uses the cover letter prompt in cover mode", async () => {
+    const fetchMock = stubOpenRouter(
+      Response.json({ choices: [{ message: { content: "Dear Hiring Team," } }] }),
+    );
+
+    const state = await tailorResume(SAMPLE_RESUME, "sample-ai-eng", "cover");
+
+    expect(state).toEqual({ text: "Dear Hiring Team,", model: "unknown", error: null });
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, { body: string }];
+    expect(init.body).toContain("cover letter");
+  });
+
+  it("rejects an unknown mode", async () => {
+    expect(
+      (await tailorResume(SAMPLE_RESUME, "sample-ai-eng", "poem" as "cover")).error,
+    ).toBeTruthy();
+  });
+
   it("refuses an unknown job id without calling the model", async () => {
     const fetchMock = stubOpenRouter(Response.json({}));
 

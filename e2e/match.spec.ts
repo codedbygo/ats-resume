@@ -38,10 +38,29 @@ test.describe("resume to matched jobs", () => {
       .getByRole("listitem")
       .filter({ has: page.getByRole("heading", { level: 3 }) })
       .first();
-    await expect(first.getByText(/\d+%/)).toBeVisible();
+    await expect(first.getByText("Skill coverage")).toBeVisible();
 
     await first.getByRole("button", { name: /ATS check vs this job/ }).click();
     await expect(page.getByText(/Scored against/)).toBeVisible();
+  });
+
+  // Regression: the print copy sat inside the sticky column and printed blank.
+  test("prints only the resume as plain text and keeps it after a reload", async ({ page }) => {
+    await page.goto("/");
+    await expect(async () => {
+      await page.getByRole("button", { name: "Try a sample" }).click();
+      await expect(page.getByRole("textbox", { name: "Resume text" })).not.toHaveValue("", {
+        timeout: 500,
+      });
+    }).toPass();
+
+    await page.reload();
+    await expect(page.getByRole("textbox", { name: "Resume text" })).toHaveValue(/Alex Rivera/);
+    await page.emulateMedia({ media: "print" });
+
+    await expect(page.locator("#print-resume")).toBeVisible();
+    await expect(page.locator("#print-resume")).toContainText("Brightpath Labs");
+    await expect(page.getByRole("heading", { name: /Stop searching/ })).toBeHidden();
   });
 
   test("serves the liveness probe", async ({ request }) => {
