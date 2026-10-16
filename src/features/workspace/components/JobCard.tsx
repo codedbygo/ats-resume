@@ -1,7 +1,17 @@
-import { ExternalLink, LoaderCircle, MapPin, Sparkles, Target } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  LoaderCircle,
+  Mail,
+  MapPin,
+  Sparkles,
+  Target,
+} from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import type { TailorState } from "@/features/ai/actions";
+import type { TailorMode, TailorState } from "@/features/ai/actions";
 import type { MatchView } from "@/features/jobs/actions";
 import { cn } from "@/lib/utils";
 
@@ -77,26 +87,49 @@ function Chips({ items, tone }: { items: string[]; tone: "good" | "gap" }) {
   );
 }
 
+function Breakdown({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex-1 space-y-1">
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>{label}</span>
+        <span className="font-mono tabular-nums">{value}%</span>
+      </div>
+      <div className="h-1 overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full rounded-full bg-linear-to-r from-primary to-brand-2"
+          style={{ width: `${String(value)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+const AI_LABELS: Record<TailorMode, { idle: string; busy: string; title: string }> = {
+  tailor: { idle: "Tailor with AI", busy: "Tailoring", title: "Tailored for this job" },
+  cover: { idle: "Cover letter", busy: "Writing", title: "Cover letter draft" },
+};
+
 /** JobCard is one ranked job with why it matched and what to do next. */
 export function JobCard({
   match,
   rank,
   selected,
   aiEnabled,
-  tailor,
-  tailoring,
+  ai,
+  busy,
   onSelect,
-  onTailor,
+  onAi,
 }: {
   match: MatchView;
   rank: number;
   selected: boolean;
   aiEnabled: boolean;
-  tailor: TailorState | null;
-  tailoring: boolean;
+  ai: { mode: TailorMode; state: TailorState } | null;
+  busy: TailorMode | null;
   onSelect: () => void;
-  onTailor: () => void;
+  onAi: (mode: TailorMode) => void;
 }) {
+  const [copied, setCopied] = useState(false);
   return (
     <li
       className={cn(
@@ -129,6 +162,11 @@ export function JobCard({
           </p>
         </div>
         <MatchRing score={match.score} />
+      </div>
+
+      <div className="mt-4 flex gap-4">
+        <Breakdown label="Skill coverage" value={match.coverage} />
+        <Breakdown label="Semantic similarity" value={match.semantic} />
       </div>
 
       {(match.matched.length > 0 || match.missing.length > 0) && (
@@ -165,21 +203,32 @@ export function JobCard({
         >
           <Target aria-hidden /> ATS check vs this job
         </Button>
-        {aiEnabled && (
-          <Button
-            size="sm"
-            onClick={onTailor}
-            disabled={tailoring}
-            className="bg-linear-to-r from-primary to-brand-2 text-white hover:opacity-90"
-          >
-            {tailoring ? (
-              <LoaderCircle className="animate-spin" aria-hidden />
-            ) : (
-              <Sparkles aria-hidden />
-            )}
-            {tailoring ? "Tailoring" : "Tailor with AI"}
-          </Button>
-        )}
+        {aiEnabled &&
+          (["tailor", "cover"] as const).map((mode) => (
+            <Button
+              key={mode}
+              size="sm"
+              variant={mode === "tailor" ? "default" : "secondary"}
+              onClick={() => {
+                setCopied(false);
+                onAi(mode);
+              }}
+              disabled={busy !== null}
+              className={cn(
+                mode === "tailor" &&
+                  "bg-linear-to-r from-primary to-brand-2 text-white hover:opacity-90",
+              )}
+            >
+              {busy === mode ? (
+                <LoaderCircle className="animate-spin" aria-hidden />
+              ) : mode === "tailor" ? (
+                <Sparkles aria-hidden />
+              ) : (
+                <Mail aria-hidden />
+              )}
+              {busy === mode ? AI_LABELS[mode].busy : AI_LABELS[mode].idle}
+            </Button>
+          ))}
         <Button size="sm" variant="ghost" asChild className="ml-auto">
           <a href={match.url} target="_blank" rel="noopener noreferrer">
             View posting <ExternalLink aria-hidden />
@@ -187,23 +236,38 @@ export function JobCard({
         </Button>
       </div>
 
-      {tailor && (
+      {ai && (
         <div
           role="status"
           className="mt-4 rounded-xl border border-primary/20 bg-linear-to-br from-primary/5 to-brand-2/5 p-4 text-sm"
         >
-          {tailor.error === null ? (
+          {ai.state.error === null ? (
             <>
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-primary">
-                <Sparkles className="size-3.5" aria-hidden /> Tailored for this job
-              </p>
-              <p className="leading-relaxed whitespace-pre-wrap">{tailor.text}</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                  <Sparkles className="size-3.5" aria-hidden /> {AI_LABELS[ai.mode].title}
+                </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(ai.state.text ?? "").then(() => {
+                      setCopied(true);
+                    });
+                  }}
+                >
+                  {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              </div>
+              <p className="leading-relaxed whitespace-pre-wrap">{ai.state.text}</p>
               <p className="mt-3 text-xs text-muted-foreground">
-                Generated by {tailor.model}. Check every line before you use it.
+                Generated by {ai.state.model}. Check every line before you use it.
               </p>
             </>
           ) : (
-            <p className="text-destructive">{tailor.error}</p>
+            <p className="text-destructive">{ai.state.error}</p>
           )}
         </div>
       )}

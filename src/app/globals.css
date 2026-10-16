@@ -137,3 +137,22 @@
     scroll-behavior: smooth;
   }
 }
+
+/* "ATS-safe PDF": print only the resume, as plain single-column text. */
+@media print {
+  @page {
+    margin: 18mm;
+  }
+  body > :not(#print-resume) {
+    display: none !important;
+  }
+  #print-resume {
+    display: block !important;
+    padding: 0;
+    color: black;
+    background: white;
+  }
+  body {
+    background: white;
+  }
+}

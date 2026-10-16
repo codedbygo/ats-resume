@@ -16,6 +16,8 @@ export interface MatchView {
   source: string;
   postedAt: string | null;
   score: number;
+  coverage: number;
+  semantic: number;
   matched: string[];
   missing: string[];
   /** Trimmed post text: enough for the ATS keyword check, not the whole page. */
@@ -39,19 +41,23 @@ export async function findMatches(resumeText: string): Promise<MatchState> {
     return { matches: null, error: parsed.error.issues[0]?.message ?? "Invalid resume." };
   }
   const feed = await fetchJobs();
-  const matches = rankJobs(parsed.data, feed.jobs).map(({ job, score, matched, missing }) => ({
-    id: job.id,
-    title: job.title,
-    company: job.company,
-    location: job.location,
-    url: job.url,
-    source: job.source,
-    postedAt: job.postedAt,
-    score,
-    matched,
-    missing,
-    description: job.description.slice(0, 2500),
-  }));
+  const matches = rankJobs(parsed.data, feed.jobs).map(
+    ({ job, score, coverage, semantic, matched, missing }) => ({
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      url: job.url,
+      source: job.source,
+      postedAt: job.postedAt,
+      score,
+      coverage,
+      semantic,
+      matched,
+      missing,
+      description: job.description.slice(0, 2500),
+    }),
+  );
   return {
     matches,
     scanned: feed.jobs.length,

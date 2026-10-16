@@ -9,8 +9,13 @@ SWARA application. Not an official SWARA product.
 - **Job matching**: pulls live jobs from Remotive, Arbeitnow and RemoteOK (cached hourly, sample fallback),
   ranks them by TF-IDF cosine similarity plus skill coverage (`src/features/jobs/match.ts`) and shows
   matched skills and gaps per job. Pick a job to score the resume against its keywords.
-- **AI tailoring** (optional): with `OPENROUTER_API_KEY` set, rewrites the most relevant bullets for one job
-  using free OpenRouter models with fallback.
+- **Explainable scores**: every match shows skill coverage and semantic similarity separately.
+- **Skill-gap insights**: the missing skills that would unlock the most of your matched jobs.
+- **Filters**: search by title, company or location and set a minimum match.
+- **AI tailoring and cover letters** (optional): with `OPENROUTER_API_KEY` set, rewrites the most relevant
+  bullets or drafts a cover letter for one job, using free OpenRouter models with fallback. Never invents facts.
+- **Export**: download the resume as .txt or print an ATS-safe single-column PDF.
+- **Remembers your resume** in this browser only (localStorage); nothing is stored on a server.
 
 Next steps beyond the prototype: dense embeddings in pgvector instead of in-memory TF-IDF, per-IP rate
 limit on the AI action, saved profiles and job alerts.

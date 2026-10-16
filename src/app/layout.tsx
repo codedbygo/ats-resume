@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { Logo } from "@/components/Logo";
 import { env } from "@/env";
+import { PrintResume } from "@/features/resume/components/PrintResume";
 
 import "./globals.css";
 
@@ -43,6 +44,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="#workspace" className="hover:text-foreground">
                 Try it
               </a>
+              <a href="#tech" className="hover:text-foreground">
+                Under the hood
+              </a>
             </div>
             <a
               href="#workspace"
@@ -66,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </p>
           </div>
         </footer>
+        <PrintResume />
       </body>
     </html>
   );

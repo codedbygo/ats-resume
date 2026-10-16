@@ -1,0 +1,19 @@
+# The Vercel CLI uploads the folder as-is and does not read .gitignore.
+# Secrets come from `vercel env`, never from a local file.
+.env
+.env.*
+!.env.example
+.vercel
+node_modules
+.next
+coverage
+test-results
+playwright-report
+.lighthouseci
+.bearing
+.claude
+.idea
+.vscode
+.mcp.json
+.gitmodules
+*.log
